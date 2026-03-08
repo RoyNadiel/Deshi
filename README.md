@@ -1,52 +1,46 @@
-# 🌿 Deshi - Control de Deshidratador Eléctrico
+# 🌿 Deshi - Control de Deshidratador Eléctrico v2.0
 
-**Deshi** es un sistema de control inteligente para un deshidratador de alimentos basado en un microcontrolador **ESP8266** (Wemos D1 Mini). Ofrece un panel de control web moderno, responsivo y fácil de usar para gestionar el tiempo, la temperatura y monitorear la humedad del proceso.
+**Deshi** es un sistema de control inteligente para un deshidratador de alimentos basado en el microcontrolador **ESP8266** (Wemos D1 Mini). Esta versión introduce una interfaz web de última generación con estética futurista y monitorización precisa para un secado perfecto.
 
 ## ✨ Características Principales
 
-- **Panel de Control Web Premium:** Interfaz oscura (_Dark Mode_) moderna con indicadores en tiempo real de temperatura, humedad actual, progreso y estado de la resistencia.
-- **Alerta de Humedad Grave:** Indicador visual parpadeante si la humedad interna alcanza niveles críticos (>= 70%), listo para futura lógica de extracción.
-- **Conexión Directa (Punto de Acceso):** Crea su propia red Wi-Fi ("Deshi") para que puedas controlarlo desde cualquier smartphone o PC sin necesidad de internet.
-- **Control Inteligente de Temperatura:** Utiliza un sensor **DHT22** para lecturas precisas y un **Relé de Estado Sólido (SSR)** para una regulación suave con histéresis de ±0.5°C.
-- **Ventilación Dinámica:** Control de ventilador por **PWM** que ajusta su velocidad automáticamente según la diferencia térmica.
-- **Seguridad y Automatización:** Apagado automático al finalizar el ciclo y bloqueo de configuración durante el proceso activo.
-- **Portal Cautivo & mDNS:** Redirección automática al panel al conectar con el Wi-Fi y acceso simple mediante `http://deshi.local`.
+- **Interfaz Premium v2.0:** Diseño ultra-moderno con **Glassmorphism**, fondos dinámicos y tipografía _Audiowide_ de estilo retro-futurista.
+- **Monitorización en Tiempo Real:** Visualización persistente de temperatura objetivo/actual, humedad ambiente y **velocidad del ventilador en %**.
+- **Ventilación Proporcional:** Dos ventiladores de alto flujo configurados en paralelo que ajustan su potencia automáticamente mediante **PWM** según la demanda térmica.
+- **Alertas Visuales:** Sistema de advertencia intermitente en la interfaz si la humedad interna supera niveles críticos (>= 70%).
+- **Control de Precisión:** Regulación térmica mediante sensor **DHT22** y un **Relé de Estado Sólido (SSR)** con una histéresis optimizada de ±0.5°C.
+- **Conectividad Autónoma:** Crea su propio Punto de Acceso Wi-Fi ("Deshi") con Portal Cautivo para un acceso instantáneo desde cualquier dispositivo.
+- **Seguridad:** Bloqueo automático de configuración durante el funcionamiento y apagado total de seguridad al finalizar el tiempo programado.
 
 ## 🛠️ Hardware y Pinout (Wemos D1 Mini)
 
-| Componente             | Pin (Literal) | Pin (GPIO) | Descripción                                                                                     |
-| :--------------------- | :------------ | :--------- | :---------------------------------------------------------------------------------------------- |
-| **Resistencia (SSR)**  | `D5`          | `GPIO14`   | Control de encendido/apagado de calor.                                                          |
-| **Ventiladores (PWM)** | `D6`          | `GPIO12`   | Control de velocidad proporcional (y futura inversión de polaridad para extracción de humedad). |
-| **Sensor (DHT22)**     | `D7`          | `GPIO13`   | Sensor de temperatura y humedad en tiempo real.                                                 |
+| Componente             | Pin (Literal) | Pin (GPIO) | Función                               |
+| :--------------------- | :------------ | :--------- | :------------------------------------ |
+| **Resistencia (SSR)**  | `D5`          | `GPIO14`   | Control de potencia calorífica.       |
+| **Ventiladores (PWM)** | `D6`          | `GPIO12`   | Control de flujo de aire (0% a 100%). |
+| **Sensor (DHT22)**     | `D7`          | `GPIO13`   | Lectura de temperatura y humedad.     |
 
-_(Nota: Está planeado implementar un módulo Puente H para invertir la polaridad de los ventiladores como sistema de extracción de humedad en una próxima versión)._
+## 📊 Lógica de Operación
 
-## 🚀 Cómo Empezar
+### Control Térmico
 
-1.  **Cargar el Código:** Abre el archivo `Deshi.ino` en el IDE de Arduino.
-2.  **Librerías Necesarias:** Asegúrate de tener instaladas las librerías `ESP8266WiFi`, `ESP8266WebServer` y `DHT sensor library` (por Adafruit).
-3.  **Configurar Placa:** Selecciona "Wemos D1 R1" o "NodeMCU 1.0" en herramientas.
-4.  **Conexión:**
-    - Busca la red Wi-Fi llamada **"Deshi"**.
-    - La contraseña por defecto es: `Deshiudone`.
-    - Abre tu navegador y ve a `http://deshi.local` o deja que el portal cautivo te redirija.
+El sistema mantiene la temperatura deseada (ajustable de 30°C a 70°C) activando el SSR si la temperatura cae por debajo del objetivo y desactivándolo inmediatamente al alcanzarlo, asegurando una temperatura constante.
 
-## 📊 Funcionamiento del Sistema
+### Sistema de Ventilación
 
-### Rangos de Operación
+La velocidad de los ventiladores es adaptativa:
 
-- **Temperatura:** 30°C a 70°C.
-- **Tiempo:** 1 a 24 horas (ajustable en pasos de 5 minutos).
+- **Diferencial > 5°C:** Los ventiladores operan al 100% para distribuir el calor rápidamente.
+- **Cerca del objetivo:** La velocidad se reduce suavemente para mantener una circulación de aire eficiente y constante (mínimo 66%).
+- **Finalización:** Apagado total de ventilación y calor.
 
-### Lógica de Control
+## 🚀 Instalación y Uso
 
-- **Histéresis Térmica:** La resistencia se enciende si la temperatura cae 0.5°C del objetivo, y se apaga al alcanzarlo.
-- **PWM Ventilador:**
-  - Diferencia > 5°C: Velocidad Máxima de soplado.
-  - Temperatura Alcanzada: Velocidad Mínima para circulación.
-  - Proceso Finalizado: Apagado Total.
+1.  **Carga el firmware:** Abre `Deshi.ino` en el IDE de Arduino y cárgalo en tu ESP8266.
+2.  **Conexión:** Conéctate a la red Wi-Fi **"Deshi"** (clave: `Deshiudone`).
+3.  **Panel de Control:** Navega a `http://deshi.local` o espera la redirección del portal cautivo.
+4.  **Configura:** Desliza los controles de tiempo y temperatura e inicia el proceso.
 
 ---
 
-Desarrollado para automatizar el secado perfecto.
+Desarrollado para elevar la deshidratación artesanal a un nivel tecnológico superior.
