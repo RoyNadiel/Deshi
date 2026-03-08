@@ -16,7 +16,7 @@ const int PIN_DHT = D7;   // GPIO13 — Sensor Temp/Hum
 //  CONFIGURACIÓN WI-FI AP
 // ============================================================
 const char* SSID_AP = "Deshi";
-const char* PASS_AP = "SinAguaNoHayParaiso";
+const char* PASS_AP = "Deshiudone";
 ESP8266WebServer server(80);
 DNSServer dnsServer;
 const byte DNS_PORT = 53;
@@ -39,6 +39,7 @@ const int HORAS_MAX = 24;
 //  VARIABLES DE ESTADO
 // ============================================================
 float currentTemp      = 0.0f;
+float currentHum       = 0.0f;
 float targetTemp       = 40.0f;  // Valor por defecto
 bool  sistemaEncendido = false;
 bool  tiempoBloqueado  = false;  // true = proceso iniciado
@@ -133,7 +134,7 @@ void handleRoot() {
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 
     /* ---- Data grid ---- */
-    .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-bottom: 1.2rem; }
+    .data-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .5rem; margin-bottom: 1.2rem; }
     .data-item {
       background: var(--bg); border: 1px solid var(--border);
       border-radius: 10px; padding: .85rem 1rem;
@@ -145,6 +146,8 @@ void handleRoot() {
     .data-item .value { font-size: 1.45rem; font-weight: 700; }
     .data-item .value.hot  { color: var(--red); }
     .data-item .value.cool { color: var(--blue); }
+    .data-item .value.grave { color: var(--red); animation: blink 1s infinite alternate; }
+    @keyframes blink { from { opacity: 1; } to { opacity: 0.5; } }
 
     /* ---- Sliders de configuración ---- */
     .config-block {
@@ -187,7 +190,7 @@ void handleRoot() {
     .btn-start  { background: var(--accent);  color: #fff; }
     .btn-reset  { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
     .btn:disabled { opacity: .45; cursor: not-allowed; }
-f
+
     /* ---- Progreso ---- */
     .progress-wrap {
       background: var(--bg); border: 1px solid var(--border);
@@ -297,10 +300,14 @@ f
       const isHot = d.heating;
       html += '<div class="badge active"><span class="dot"></span>EN PROCESO</div>';
       html += '<div class="data-grid">';
-      html +=   '<div class="data-item"><div class="label">Temp. Objetivo</div>'
-             +  '<div class="value">' + d.target + ' °C</div></div>';
-      html +=   '<div class="data-item"><div class="label">Temp. Actual</div>'
-             +  '<div class="value ' + (isHot ? 'hot' : 'cool') + '">' + d.current + ' °C</div></div>';
+      html +=   '<div class="data-item"><div class="label">Objetivo</div>'
+             +  '<div class="value">' + d.target + '°</div></div>';
+      html +=   '<div class="data-item"><div class="label">Actual</div>'
+             +  '<div class="value ' + (isHot ? 'hot' : 'cool') + '">' + d.current + '°</div></div>';
+      
+      const humGrave = d.humidity >= 70 ? 'grave' : '';
+      html +=   '<div class="data-item"><div class="label">Humedad</div>'
+             +  '<div class="value ' + humGrave + '">' + d.humidity + '%</div></div>';
       html += '</div>';
 
       html += '<div class="heat-pill ' + (isHot ? 'heat-on' : 'heat-off') + '">'
@@ -477,6 +484,7 @@ void handleStatus() {
   json += "\"done\":"     + String(finalizado        ? "true" : "false") + ",";
   json += "\"heating\":"  + String(heating           ? "true" : "false") + ",";
   json += "\"current\":"  + String(currentTemp, 1)  + ",";
+  json += "\"humidity\":" + String(currentHum, 1)   + ",";
   json += "\"target\":"   + String((int)targetTemp)  + ",";
   json += "\"minutes\":"  + String(minutosSelec)     + ",";
   json += "\"remaining\":" + String(remaining)       + ",";
@@ -617,7 +625,9 @@ void loop() {
     // Lectura DHT no-bloqueante
     if (millis() - lastDHTRead > DHT_INTERVAL) {
       float t = dht.readTemperature();
+      float h = dht.readHumidity();
       if (!isnan(t)) currentTemp = t;
+      if (!isnan(h)) currentHum = h;
       lastDHTRead = millis();
     }
 
